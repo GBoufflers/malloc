@@ -4,8 +4,9 @@
 typedef	struct			s_malloc
 {
   struct	s_malloc	*next;
+  struct	s_malloc	*prev;
   size_t			size;
-  int				isFree;
+  char				isFree;
 }				t_malloc;
 
 #endif

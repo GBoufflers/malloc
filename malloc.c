@@ -4,7 +4,8 @@
 #include		<string.h>
 #include		"malloc.h"
 
-t_malloc		*list = NULL;
+static t_malloc		*list = NULL;
+static t_malloc		*end = NULL;
 
 static void		*createShit(void *ptr, t_malloc *node, size_t size)
 {
@@ -27,11 +28,9 @@ static void		*fitAllocatedSpace(size_t size)
   bestNode = NULL;
   while (tmp)
     {
-      if (tmp->isFree == 1 && tmp->size > size)
-	{
-	  if (!bestNode || bestNode->size < tmp->size)
-	    bestNode = tmp;
-	}
+      if (tmp->isFree == 1 && tmp->size > size &&
+	  (!bestNode || bestNode->size < tmp->size))
+	bestNode = tmp;
       tmp = tmp->next;
     }
   if (bestNode)
@@ -46,27 +45,40 @@ static void		*fitAllocatedSpace(size_t size)
 void			*malloc(size_t size)
 {
   t_malloc		*new;
-  t_malloc		*tmp;
   void			*p;
 
   if ((p = fitAllocatedSpace(size)) != NULL)
     return (p);
   new = sbrk(0);
-  tmp = list;
   if (sbrk(sizeof(t_malloc) + size) == (void*) -1)
     return (NULL);
   new->size = size;
   new->isFree = 0;
   new->next = NULL;
-  if (tmp == NULL)
+  new->prev = NULL;
+  if (end == NULL)
     list = new;
   else
     {
-      while (tmp && tmp->next)
-	tmp = tmp->next;
-      tmp->next = new;
+      end->next = new;
+      new->prev = end;
     }
+  end = new;
   return ((void*)new + sizeof(t_malloc));
+}
+
+static void		deleteNode(t_malloc  *ptr)
+{
+  if (ptr == end)
+    {
+      end = ptr->prev;
+      ptr->prev->next = NULL;
+    }
+  else if (ptr->prev)
+    {
+      ptr->next->prev = ptr->prev;
+      ptr->prev->next = ptr->next;
+    }
 }
 
 void			free(void *ptr)
@@ -79,6 +91,16 @@ void			free(void *ptr)
       if ((void*)tmp + sizeof(t_malloc) == ptr)
 	{
 	  tmp->isFree = 1;
+	  if (tmp->prev && tmp->prev->isFree == 1)
+	    {
+	      tmp->prev->size += tmp->size + sizeof(t_malloc);
+	      deleteNode(tmp);
+	    }
+	  if (tmp->next && tmp->next->isFree == 1)
+	    {
+	      tmp->size += tmp->next->size + sizeof(t_malloc);
+	      deleteNode(tmp->next);
+	    }
 	  return ;
 	}
       tmp = tmp->next;

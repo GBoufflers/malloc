@@ -99,8 +99,6 @@ void			*realloc(void *ptr, size_t size)
   else
     {
       node = ptr - sizeof(t_malloc);
-      /*	      if (node->size > size)
-		      node->size = size;*/
       if (node->size < size)
 	return(createShit(ptr, node, size));
       return (ptr);

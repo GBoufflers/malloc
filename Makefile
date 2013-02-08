@@ -2,7 +2,7 @@ NAME=		libmy_malloc.so
 
 RM=		@rm -f
 
-CC=		gcc
+CC=		gcc -lpthread
 
 OBJ=		malloc.o
 
